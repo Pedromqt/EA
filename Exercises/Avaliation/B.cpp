@@ -5,7 +5,8 @@ void count_moves(int n_moves,int x, int y,std::set<std::pair<int, int>>& distinc
     int moves[8][2] = {{-2,1},{-1,2},{1,2},{2,1},{2,-1},{1,-2},{-1,-2},{-2,-1}};
     std::set<std::pair<int, int>> positions;
     positions.insert({x,y});
-
+    distinct_positions.insert({x, y});
+    
     for(int i=0;i<n_moves;i++){
         std::set<std::pair<int,int>> new_pos;
         for(auto pos : positions){
@@ -28,7 +29,6 @@ void count_moves(int n_moves,int x, int y,std::set<std::pair<int, int>>& distinc
 int main(){
     int n,x,y,possible_moves;
     std::cin >> n;
-
     std::set<std::pair<int, int>> distinct_positions;
     for(int i=0;i<n;i++){
         std::cin >> x >> y >> possible_moves;
