@@ -17,15 +17,31 @@ int check_grid_limits(int R, int C, int new_x, int new_y){
     }
 }
 
+// colococar torres de modo a cobrir os "." que faltam
+void put_towers(vector<vector<char>> &grid){
+
+}
+
+// contar numero de torres colocadas
+int count_towers(vector<vector<char>> &grid){
+    return 0;
+}
+
 // funcao para tentar modificar a posicao das torres de modo a que as torres nao colidam
 void modify_grid(vector<vector<char>> &grid){
 
 }
 
-// funcao para verificar se toda a grid esta a ser defendida
-void verify_defense(vector<vector<char>> &grid){
-
+// verificar se temos torres a colidir, se tivermos, modify_grid. Depois de nao termos torres a colidir, verify_defense
+int verify_towers_collision(vector<vector<char>> &grid){
+    return 0;
 }
+
+// funcao para verificar se toda a grid esta a ser defendida -> colocar substituir '.' por '-' nas direções que as torres tao a defender. Se nao houver '.' na grid, ta feito
+int verify_defense(vector<vector<char>> &grid){
+    return 0;
+}
+
 
 // colocar torres a volta dos postos
 int heimerdinger(vector<vector<char>> &grid){
@@ -52,12 +68,27 @@ int heimerdinger(vector<vector<char>> &grid){
                         if (grid[new_x][new_y] == '.' && placed_turrets < number_turrets){
                             grid[new_x][new_y] = place_turret;
                             placed_turrets++;
-                        }else if(placed_turrets>=number_turrets){
+                        }else if(placed_turrets>=number_turrets && grid[new_x][new_y]!='#'){
                             // nao podemos depois adicionar torres em lugares na grid que tenham '-'
                             grid[new_x][new_y] = cant_place_turret;
                         }
                     }
                 }
+            }
+        }
+        // se as torres colidem, modificamos o lugar delas -> isto é para as torres obrigatorias a volta dos postos.
+        if(verify_towers_collision(grid)){
+            modify_grid(grid);
+            if(verify_defense(grid)){
+                return count_towers(grid);
+            }else{
+                put_towers(grid);
+            }
+        }else{
+            if(verify_defense(grid)){
+                return count_towers(grid);
+            }else{
+                put_towers(grid);
             }
         }
     }
