@@ -3,8 +3,12 @@
 
 using namespace std;
 
+// onde temos N não podemos ter torres, pois o posto tem 0 torres.
+// onde temos P podemos ter torres, pois o posto tem >0 torres. Vou usar para fazer trocas na modify grid.
+
 int turret_places[][2] = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
 char cant_place_turret = 'N';
+char can_place_turret = 'P';
 char place_turret = 'x';
 
 // verificar se nao saimos fora da grid para nao termos SF
@@ -34,6 +38,42 @@ void modify_grid(vector<vector<char>> &grid){
 
 // verificar se temos torres a colidir, se tivermos, modify_grid. Depois de nao termos torres a colidir, verify_defense
 int verify_towers_collision(vector<vector<char>> &grid){
+    int R = int(grid.size());
+    int C = int(grid[0].size());
+    
+    for(int c = 0; c < C; c++) {
+        int count = 0;
+        for(int r = 0; r < R; r++) {
+            if(grid[r][c] == 'x') {
+                count++;
+            }
+            if(count > 1){
+                return 1;
+            } 
+            if(count>0 && grid[r][c] == '#'){
+                count--;
+            }
+           
+        }
+    }
+    
+    for(int r = 0; r < R; r++) {
+        int count = 0;
+        for(int c = 0; c < C; c++) {
+            if(grid[r][c] == 'x') {
+                count++;
+            }
+            if(count > 1){
+                return 1;
+            } 
+            if(count>0 && grid[r][c] == '#'){
+                count--;
+            }
+            
+        }
+        
+    }
+    
     return 0;
 }
 
@@ -65,34 +105,40 @@ int heimerdinger(vector<vector<char>> &grid){
                     int new_x = r + turret_places[p][0];
                     int new_y = c + turret_places[p][1];
                     if (check_grid_limits(R, C, new_x, new_y)){
-                        if (grid[new_x][new_y] == '.' && placed_turrets < number_turrets){
-                            grid[new_x][new_y] = place_turret;
-                            placed_turrets++;
-                        }else if(placed_turrets>=number_turrets && grid[new_x][new_y]!='#'){
-                            // nao podemos depois adicionar torres em lugares na grid que tenham '-'
+                        if(number_turrets==0 && !isdigit(grid[new_x][new_y])){
                             grid[new_x][new_y] = cant_place_turret;
+                        }else{
+                            if (grid[new_x][new_y] == '.' && placed_turrets < number_turrets){
+                                grid[new_x][new_y] = place_turret;
+                                placed_turrets++;
+                            }else if(placed_turrets>=number_turrets && grid[new_x][new_y]!='#' && grid[new_x][new_y] != 'N' && number_turrets!=0){
+                                // nao podemos depois adicionar torres em lugares na grid que tenham '-'
+                                grid[new_x][new_y] = can_place_turret;
+                            }
                         }
+                        
                     }
                 }
             }
         }
-        // se as torres colidem, modificamos o lugar delas -> isto é para as torres obrigatorias a volta dos postos.
-        if(verify_towers_collision(grid)){
-            modify_grid(grid);
-            if(verify_defense(grid)){
-                return count_towers(grid);
-            }else{
-                put_towers(grid);
-            }
+        
+    }
+    // se as torres colidem, modificamos o lugar delas -> isto é para as torres obrigatorias a volta dos postos.
+    if(verify_towers_collision(grid)){
+        cout << "ARDEU" << "\n";
+        modify_grid(grid);
+        if(verify_defense(grid)){
+            return count_towers(grid);
         }else{
-            if(verify_defense(grid)){
-                return count_towers(grid);
-            }else{
-                put_towers(grid);
-            }
+            put_towers(grid);
+        }
+    }else{
+        if(verify_defense(grid)){
+            return count_towers(grid);
+        }else{
+            put_towers(grid);
         }
     }
-
     for (int r = 0; r < int(grid.size()); r++){
         for (int c = 0; c < int(grid[0].size()); c++){
             cout << grid[r][c] << " ";
