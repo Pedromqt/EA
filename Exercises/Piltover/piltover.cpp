@@ -105,6 +105,7 @@ int heimerdinger(vector<vector<char>> &grid){
                     int new_x = r + turret_places[p][0];
                     int new_y = c + turret_places[p][1];
                     if (check_grid_limits(R, C, new_x, new_y)){
+                        // colocar 'N' quando é um posto e nao podemos ter torres a volta. caso a volta seja um posto, nao substituir por N 
                         if(number_turrets==0 && !isdigit(grid[new_x][new_y])){
                             grid[new_x][new_y] = cant_place_turret;
                         }else{
