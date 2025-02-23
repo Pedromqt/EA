@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -8,10 +9,9 @@ using namespace std;
 
 int turret_places[][2] = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
 char cant_place_turret = 'N';
-char can_place_turret = 'P';
 char place_turret = 'x';
 
-// verificar se nao saimos fora da grid para nao termos SF
+// verificar se nao saimos fora da grid
 int check_grid_limits(int R, int C, int new_x, int new_y){
     if (new_x >= 0 && new_x < R && new_y >= 0 && new_y < C){
         return 1;
@@ -22,18 +22,33 @@ int check_grid_limits(int R, int C, int new_x, int new_y){
 }
 
 // colococar torres de modo a cobrir os "." que faltam
-void put_towers(vector<vector<char>> &grid){
+int put_towers(vector<vector<char>> &grid){
+    //chamar recursivamente a verif de colisao de torres
 
+    return 0;
 }
 
 // contar numero de torres colocadas
 int count_towers(vector<vector<char>> &grid){
-    return 0;
+    int n_towers=0;
+    for(auto r : grid){
+       n_towers += count(r.begin(),r.end(),'x');
+    }
+    return n_towers;
 }
 
 // funcao para tentar modificar a posicao das torres de modo a que as torres nao colidam
-void modify_grid(vector<vector<char>> &grid){
-
+int modify_grid(vector<vector<char>> &grid){
+    int R = int(grid.size());
+    int C = int(grid[0].size());
+    for(int r = 0 ; r < R ; r++){
+        for(int c = 0; c < C ; c++){
+            
+        }
+    }
+    //chamar recursivamente a verif de colisao de torres
+    return 1;
+    
 }
 
 // verificar se temos torres a colidir, se tivermos, modify_grid. Depois de nao termos torres a colidir, verify_defense
@@ -47,10 +62,11 @@ int verify_towers_collision(vector<vector<char>> &grid){
             if(grid[r][c] == 'x') {
                 count++;
             }
+            // ha 2 x seguidos
             if(count > 1){
                 return 1;
             } 
-            if(count>0 && grid[r][c] == '#'){
+            if(count>0 && (grid[r][c] == '#' || isdigit(grid[r][c]))){
                 count--;
             }
            
@@ -66,7 +82,7 @@ int verify_towers_collision(vector<vector<char>> &grid){
             if(count > 1){
                 return 1;
             } 
-            if(count>0 && grid[r][c] == '#'){
+            if(count>0 && (grid[r][c] == '#' || isdigit(grid[r][c]))){
                 count--;
             }
             
@@ -79,9 +95,57 @@ int verify_towers_collision(vector<vector<char>> &grid){
 
 // funcao para verificar se toda a grid esta a ser defendida -> colocar substituir '.' por '-' nas direções que as torres tao a defender. Se nao houver '.' na grid, ta feito
 int verify_defense(vector<vector<char>> &grid){
-    return 0;
+    int R = int(grid.size());
+    int C = int(grid[0].size());
+    
+    for(int r = 0 ; r < R ; r++){
+        for(int c = 0 ; c < C ; c++){
+            if(grid[r][c]=='x'){
+                // '.' passa a '-' na mesma linha
+                for (int left = c - 1; left >= 0 && grid[r][left] != '#' && !isdigit(grid[r][left]); left--) {
+                    if (grid[r][left] == '.'){
+                        grid[r][left] = '-';
+                    } 
+                }
+                for (int right = c + 1; right < C && grid[r][right] != '#'  && !isdigit(grid[r][right]); right++) {
+                    if (grid[r][right] == '.'){
+                        grid[r][right] = '-';
+                    } 
+                }
+                // '.' passa a '-' na mesma coluna
+                for(int up = r-1 ; up >= 0 && grid[up][c] != '#'  && !isdigit(grid[up][c]); up--){
+                    if (grid[up][c] == '.'){
+                        grid[up][c] = '-';
+                    } 
+                }
+                for(int down = r+1 ; down < R && grid[down][c] != '#' && !isdigit(grid[down][c]); down++){
+                    if (grid[down][c] == '.'){
+                        grid[down][c] = '-';
+                    } 
+                }
+            }
+        }
+    }
+    for(auto r : grid){
+        if(count(r.begin(),r.end(),'.')>0){
+            return 0;
+        }
+    }
+    
+    return 1;
+
 }
 
+void printGrid(vector<vector<char>> &grid){
+    int R = grid.size();
+    int C = grid[0].size();
+    for (int r = 0; r < int(grid.size()); r++){
+        for (int c = 0; c < int(grid[0].size()); c++){
+            cout << grid[r][c] << " ";
+        }
+        cout << endl;
+    }
+}
 
 // colocar torres a volta dos postos
 int heimerdinger(vector<vector<char>> &grid){
@@ -112,9 +176,6 @@ int heimerdinger(vector<vector<char>> &grid){
                             if (grid[new_x][new_y] == '.' && placed_turrets < number_turrets){
                                 grid[new_x][new_y] = place_turret;
                                 placed_turrets++;
-                            }else if(placed_turrets>=number_turrets && grid[new_x][new_y]!='#' && grid[new_x][new_y] != 'N' && number_turrets!=0){
-                                // nao podemos depois adicionar torres em lugares na grid que tenham '-'
-                                grid[new_x][new_y] = can_place_turret;
                             }
                         }
                         
@@ -124,27 +185,35 @@ int heimerdinger(vector<vector<char>> &grid){
         }
         
     }
+    
     // se as torres colidem, modificamos o lugar delas -> isto é para as torres obrigatorias a volta dos postos.
     if(verify_towers_collision(grid)){
-        cout << "ARDEU" << "\n";
-        modify_grid(grid);
-        if(verify_defense(grid)){
-            return count_towers(grid);
+        // se conseguirmos modificar a grelha sem termos torres a colidir, verificamos se defende tudo.
+        if(modify_grid(grid)){
+            // se defender tudo, retornamos o numero de torres usadas.
+            if(verify_defense(grid)){
+                return count_towers(grid);
+            }else{ 
+                // adicionar torres de modo a cobrir o que falta. Se conseguirmos adicionar as torres e nao haja colisoes depois de adicionar
+                if(put_towers(grid)){
+                    return count_towers(grid);
+                }else{
+                    return 0;
+                }
+            }
         }else{
-            put_towers(grid);
+            return 0;
         }
     }else{
         if(verify_defense(grid)){
             return count_towers(grid);
         }else{
-            put_towers(grid);
+            if(put_towers(grid)){
+                return count_towers(grid);
+            }else{
+                return 0;
+            }
         }
-    }
-    for (int r = 0; r < int(grid.size()); r++){
-        for (int c = 0; c < int(grid[0].size()); c++){
-            cout << grid[r][c] << " ";
-        }
-        cout << endl;
     }
     return 0;
 }
