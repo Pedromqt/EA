@@ -139,8 +139,8 @@ int verify_defense(vector<vector<char>> &grid){
 void printGrid(vector<vector<char>> &grid){
     int R = grid.size();
     int C = grid[0].size();
-    for (int r = 0; r < int(grid.size()); r++){
-        for (int c = 0; c < int(grid[0].size()); c++){
+    for (int r = 0; r < R; r++){
+        for (int c = 0; c < C; c++){
             cout << grid[r][c] << " ";
         }
         cout << endl;
