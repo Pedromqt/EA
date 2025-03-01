@@ -74,7 +74,6 @@ void work_outposts(){
         int c = outpost.first.second;
         int number_turrets = outpost.second;
         bool flag = number_turrets == 0 ? false : true;
-        // quantas torres faltam colocar
         int remaining_turrets_to_place = number_turrets - count_turrets_around_outpost(r,c);
         if(put_turrets(r,c,remaining_turrets_to_place,0,flag)){
             continue;
@@ -94,7 +93,7 @@ void print_grid() {
 void print_turrets(){
     for(auto turret : turrets){
         for(auto place : turret.second){
-            cout << turret.first.first << " " << turret.first.second << " " << place.first.first << " " << place.first.second << " " << place.second << endl;
+            cout <<"Outpost: " << turret.first.first << " " << turret.first.second << "Torre " << place.first.first << " " << place.first.second << " Valor" << place.second << endl;
         }
     }
 }
