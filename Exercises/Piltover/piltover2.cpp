@@ -168,6 +168,12 @@ void print_grid() {
 
 void combine_turrets() {
    // for outposts -> retorna as combinacoes todas do proprio outpost. pegamos na primeira e continuamos a combinar
+    for(auto &outpost : turrets){
+        if(outpost.second.size() > 1){
+            // ou seja temos mais de uma torre pra combinar
+            
+        }
+    }
 }
 
 
