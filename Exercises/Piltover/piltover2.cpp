@@ -166,16 +166,10 @@ void print_grid() {
     }
 }
 
-int combine_turrets(){
-    // int n_combinations = calc_n_combinations();
-    
-    while(1){
-        if(!check_turret_same_column_or_line()){
-            return 1;
-        }
-    }
-    return 0;
+void combine_turrets() {
+   // for outposts -> retorna as combinacoes todas do proprio outpost. pegamos na primeira e continuamos a combinar
 }
+
 
 void print_turrets(){
     for(auto turret : turrets){
