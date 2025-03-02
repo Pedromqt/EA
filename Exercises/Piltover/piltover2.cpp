@@ -68,6 +68,77 @@ int count_turrets_around_outpost(int r,int c){
     return turrets_placed;
 }
 
+/* int fatorial(int n){
+
+    int res = 1;
+    for(int i = 1; i <= n; i++){
+        res *= i;
+    }
+    return res;
+}
+
+int calc_n_combinations(){
+    int n_combinations = 1;
+    int n_places;
+    int n_turrets;
+    for(auto turret : turrets){
+        n_places = turret.second.size();
+        n_turrets = 0;
+        for(auto place : turret.second){
+            if(place.second == 1){
+                n_turrets++;
+            }
+        }
+        n_combinations *= fatorial(n_places)/(fatorial(n_turrets)*fatorial(n_places - n_turrets));
+    }
+    cout << n_combinations << endl;
+    return n_combinations;
+}*/
+
+bool check_same_row(int r, int c, bool turret_found) {
+    if (c >= C) {
+        return false;
+    }
+    if (grid[{r, c}] == 'x') {
+        if (turret_found) {
+            return true; 
+        }
+        turret_found = true;
+    } else if (grid[{r, c}] == '#' || isdigit(grid[{r, c}])) {
+        turret_found = false;  
+    }
+    return check_same_row(r, c + 1, turret_found); 
+}
+
+bool check_same_column(int c, int r, bool turret_found) {
+    if (r >= R) {
+        return false; 
+    }
+    if (grid[{r, c}] == 'x') {
+        if (turret_found) {
+            return true; 
+        }
+        turret_found = true;
+    } else if (grid[{r, c}] == '#' || isdigit(grid[{r, c}])) {
+        turret_found = false; 
+    }
+    return check_same_column(c, r + 1, turret_found);  
+}
+
+bool check_turret_same_column_or_line(){
+    for (int r = 0; r < R; r++) {
+        if (check_same_row(r, 0, false)) {
+            return true; 
+        }
+    }
+    for (int c = 0; c < C; c++) {
+        if (check_same_column(c, 0, false)) {
+            return true; 
+        }
+    }
+    return false;
+}
+
 void work_outposts(){
     for(auto outpost : outposts){
         int r = outpost.first.first;
@@ -75,10 +146,26 @@ void work_outposts(){
         int number_turrets = outpost.second;
         bool flag = number_turrets == 0 ? false : true;
         int remaining_turrets_to_place = number_turrets - count_turrets_around_outpost(r,c);
-        if(put_turrets(r,c,remaining_turrets_to_place,0,flag)){
-            continue;
+        if(!put_turrets(r,c,remaining_turrets_to_place,0,flag)){
+            cout << "noxus will rise!" << endl;
+            return;
         }
     }
+}
+
+void put_turrets(){
+
+}
+
+int combine_turrets(){
+    // int n_combinations = calc_n_combinations();
+    while(1){
+        
+        if(!check_turret_same_column_or_line()){
+            return 1;
+        }
+    }
+    return 0;
 }
 
 void print_grid() {
@@ -93,7 +180,7 @@ void print_grid() {
 void print_turrets(){
     for(auto turret : turrets){
         for(auto place : turret.second){
-            cout <<"Outpost: " << turret.first.first << " " << turret.first.second << "Torre " << place.first.first << " " << place.first.second << " Valor" << place.second << endl;
+            cout <<"Outpost: " << turret.first.first << " " << turret.first.second << " Torre " << place.first.first << " " << place.first.second << " Valor " << place.second << endl;
         }
     }
 }
@@ -117,6 +204,12 @@ void heimerdinger(){
         }
         work_outposts();
         print_grid();
+        if(check_turret_same_column_or_line()){
+            cout << "tira que eu bati" << endl;
+            combine_turrets();
+        }else{
+            put_turrets();
+        }
         cout << endl;
         print_turrets();
         cout << endl;
