@@ -13,7 +13,7 @@ map<pair<int,int>,int> outposts;
 map<pair<int, int>, map<pair<int, int>, int>> turrets;
 map<pair<int,int>,int> walls;
 
-int T,R,C,n_turrets;
+int T,R,C,n_turrets,c_cells;
 void print_grid() {
     for (int i = 0; i < R; i++) {
         for (int j = 0; j < C; j++) {
@@ -29,6 +29,7 @@ void clear(){
     turrets.clear();
     walls.clear();
     n_turrets = 0;
+    c_cells = 0;
 }
 
 int check_grid(int x,int y){
@@ -133,6 +134,7 @@ int put_turrets(int r, int c, int number_turrets){
             grid[pl->second] = 'x';
             pl++;
             n_turrets++;
+            c_cells++;
         }
     }else{
         return 0;
@@ -235,28 +237,28 @@ void check_turret_vision(){
             int new_x = x - 1;
             while (new_x >= 0 && grid[{new_x, y}] != '#' && !isdigit(grid[{new_x, y}])) {
                 if(grid[{new_x, y}] == '.'){
-                    grid[{new_x, y}] = 'D';
+                    grid[{new_x, y}] = 'D';c_cells++;
                 }
                 new_x--;
             }
             int new_y = y + 1;
             while (new_y < C && grid[{x, new_y}] != '#' && !isdigit(grid[{x, new_y}])) {
                 if (grid[{x, new_y}] == '.' ) {
-                    grid[{x, new_y}] = 'D';
+                    grid[{x, new_y}] = 'D';c_cells++;
                 }
                 new_y++;
             }
             new_x = x + 1;
             while (new_x < R && grid[{new_x, y}] != '#' && !isdigit(grid[{new_x, y}])) {
                 if (grid[{new_x, y}] == '.' ) {
-                    grid[{new_x, y}] = 'D';
+                    grid[{new_x, y}] = 'D';c_cells++;
                 }
                 new_x++;
             }
             new_y = y - 1;
             while (new_y >= 0 && grid[{x, new_y}] != '#' && !isdigit(grid[{x, new_y}])) {
                 if (grid[{x, new_y}] == '.' ) {
-                    grid[{x, new_y}] = 'D';
+                    grid[{x, new_y}] = 'D';c_cells++;
                 }
                 new_y--;
             }
@@ -274,7 +276,7 @@ void fill_turrets(){
                     p=1;
                     grid[{r,c}] = 'x';
                     turrets[{r,c}][{r,c}] = 1;
-                    
+                    c_cells++;
                     n_turrets++;
                 }else{
                     int cells = count_covered_cells(r,c);
@@ -290,6 +292,7 @@ void fill_turrets(){
     grid[place->second] = 'x';
     turrets[place->second][place->second] = 1;
     n_turrets++;
+    c_cells++;
     check_turret_vision();
 }
 
@@ -331,8 +334,10 @@ void heimerdinger(){
                 grid[{r,c}] = aux;
                 if(isdigit(aux)){
                     outposts[{r,c}] = aux - '0';
+                    c_cells++;
                 }else if(aux == '#'){
                     walls[{r,c}] = 1;
+                    c_cells++;
                 }
             }
         }
