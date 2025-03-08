@@ -13,7 +13,7 @@ map<pair<int,int>,int> outposts;
 map<pair<int, int>, map<pair<int, int>, int>> turrets;
 map<pair<int,int>,int> walls;
 
-int T,R,C;
+int T,R,C,n_turrets;
 void print_grid() {
     for (int i = 0; i < R; i++) {
         for (int j = 0; j < C; j++) {
@@ -28,6 +28,7 @@ void clear(){
     outposts.clear();
     turrets.clear();
     walls.clear();
+    n_turrets = 0;
 }
 
 int check_grid(int x,int y){
@@ -51,7 +52,7 @@ int count_covered_cells(int new_x, int new_y) {
         } else if (grid[{x,new_y}] == '.') {
             covered_cells++;
         }else if(grid[{x,new_y}] == '#' || isdigit(grid[{x,new_y}])){
-            tower_count = false;
+            break;
         }
         x--; 
     }
@@ -66,7 +67,7 @@ int count_covered_cells(int new_x, int new_y) {
         } else if (grid[{new_x,y}] == '.') {
             covered_cells++;
         }else if(grid[{new_x,y}] == '#' || isdigit(grid[{new_x,y}])){
-            tower_count = false;
+            break;
         }
         y++; 
     }
@@ -81,7 +82,7 @@ int count_covered_cells(int new_x, int new_y) {
         } else if (grid[{x,new_y}] == '.') {
             covered_cells++;
         }else if(grid[{x,new_y}] == '#' || isdigit(grid[{x,new_y}])){
-            tower_count = false;
+            break;
         }
         x++; 
     }
@@ -96,7 +97,7 @@ int count_covered_cells(int new_x, int new_y) {
         } else if (grid[{new_x,y}] == '.') {
             covered_cells++;
         }else if(grid[{new_x,y}] == '#' || isdigit(grid[{new_x,y}])){
-            tower_count = false;
+            break;
         }
         y--;  
     }
@@ -131,12 +132,12 @@ int put_turrets(int r, int c, int number_turrets){
             turrets[{r,c}][pl->second] = 1;
             grid[pl->second] = 'x';
             pl++;
+            n_turrets++;
         }
     }else{
         return 0;
     }
-    
-    print_grid();
+
     return 1;
 }
 
@@ -212,6 +213,7 @@ bool check_same_column(int c, int r, bool turret_found) {
 }
 
 bool check_turret_same_column_or_line(){
+
     for (int r = 0; r < R; r++) {
         if (check_same_row(r, 0, false)) {
             return true; 
@@ -225,9 +227,72 @@ bool check_turret_same_column_or_line(){
     return false;
 }
 
-void fill_turrets(){
-
+void check_turret_vision(){
+    for(auto turret : turrets){
+        for(auto place : turret.second){
+            int x = place.first.first;
+            int y = place.first.second;
+            int new_x = x - 1;
+            while (new_x >= 0 && grid[{new_x, y}] != '#' && !isdigit(grid[{new_x, y}])) {
+                if(grid[{new_x, y}] == '.'){
+                    grid[{new_x, y}] = 'D';
+                }
+                new_x--;
+            }
+            int new_y = y + 1;
+            while (new_y < C && grid[{x, new_y}] != '#' && !isdigit(grid[{x, new_y}])) {
+                if (grid[{x, new_y}] == '.' ) {
+                    grid[{x, new_y}] = 'D';
+                }
+                new_y++;
+            }
+            new_x = x + 1;
+            while (new_x < R && grid[{new_x, y}] != '#' && !isdigit(grid[{new_x, y}])) {
+                if (grid[{new_x, y}] == '.' ) {
+                    grid[{new_x, y}] = 'D';
+                }
+                new_x++;
+            }
+            new_y = y - 1;
+            while (new_y >= 0 && grid[{x, new_y}] != '#' && !isdigit(grid[{x, new_y}])) {
+                if (grid[{x, new_y}] == '.' ) {
+                    grid[{x, new_y}] = 'D';
+                }
+                new_y--;
+            }
+        }
+    }
 }
+
+void fill_turrets(){
+    set<pair<int,pair<int,int>>> new_places;
+    int p=0;
+    for(int r = 0; r < R; r++){
+        for(int c = 0; c < C; c++){
+            if(grid[{r,c}] == '.'){
+                if(p==0){
+                    p=1;
+                    grid[{r,c}] = 'x';
+                    turrets[{r,c}][{r,c}] = 1;
+                    
+                    n_turrets++;
+                }else{
+                    int cells = count_covered_cells(r,c);
+                    if (cells> 0){
+                        new_places.insert({cells,{r,c}});
+                    }
+                }
+                
+            }
+        }
+    }
+    auto place = new_places.rbegin();
+    grid[place->second] = 'x';
+    turrets[place->second][place->second] = 1;
+    n_turrets++;
+    check_turret_vision();
+}
+
 
 void work_outposts(){
     for(auto outpost : outposts){
@@ -241,13 +306,10 @@ void work_outposts(){
             return;
         }
     }
+    check_turret_vision();
     fill_turrets();
-    cout << int(turrets.size()) << '\n';
+    cout << n_turrets << '\n';
 }
-
-
-
-
 
 void print_turrets(){
     for(auto turret : turrets){
