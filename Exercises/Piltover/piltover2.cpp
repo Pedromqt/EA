@@ -12,8 +12,17 @@ map<pair<int,int>,char> grid;
 map<pair<int,int>,int> outposts;
 map<pair<int, int>, map<pair<int, int>, int>> turrets;
 map<pair<int,int>,int> walls;
-int T,R,C;
 
+int T,R,C;
+void print_grid() {
+    for (int i = 0; i < R; i++) {
+        for (int j = 0; j < C; j++) {
+            cout << grid[{i, j}];
+        }
+        cout << endl;
+    }
+    cout << endl;
+}
 void clear(){
     grid.clear();
     outposts.clear();
@@ -28,30 +37,107 @@ int check_grid(int x,int y){
     return 0;
 }
 
-int put_turrets(int r, int c, int number_turrets,int place, bool flag){
-    if(place >= 4 && number_turrets <= 0){
-        return 1;
+int count_covered_cells(int new_x, int new_y) {
+    int covered_cells = 0;
+    bool tower_count = true;
+
+    int x = new_x - 1;
+    while (x >= 0) {
+        if (grid[{x, new_y}] == 'x') {
+            if (tower_count == true) {
+                return 0;
+            }
+            tower_count = true;
+        } else if (grid[{x,new_y}] == '.') {
+            covered_cells++;
+        }else if(grid[{x,new_y}] == '#' || isdigit(grid[{x,new_y}])){
+            tower_count = false;
+        }
+        x--; 
     }
-    if(place >= 4 && number_turrets > 0){
-        return 0;
+    tower_count = true;
+    int y = new_y + 1;
+    while (y < C) {
+        if (grid[{new_x,y}] == 'x') {
+            if (tower_count == true) {
+                return 0;
+            }
+            tower_count = true;
+        } else if (grid[{new_x,y}] == '.') {
+            covered_cells++;
+        }else if(grid[{new_x,y}] == '#' || isdigit(grid[{new_x,y}])){
+            tower_count = false;
+        }
+        y++; 
     }
-    int new_x,new_y;
-    new_x = r + turret_places[place][0];
-    new_y = c + turret_places[place][1];
-    place++;
-    pair<int,int> outpost_place = {r,c};
-    pair<int,int> new_place = {new_x,new_y};
-    if(check_grid(new_x,new_y)){
-        if(grid[new_place] == '.' && number_turrets > 0){ 
-            grid[new_place] = 'x';
-            turrets[outpost_place][new_place] = 1;
-            number_turrets--;
-        }else if(grid[new_place] == '.' && number_turrets == 0 && flag == true){
-            grid[new_place] = 'k';
-            turrets[outpost_place][new_place] = 2; // para saber que podemos andar as trocas com este lugar depois
+    tower_count = true;
+    x = new_x + 1;
+    while (x < R) {
+        if (grid[{x,new_y}] == 'x') {
+            if (tower_count == true) {
+                return 0;
+            }
+            tower_count = true;
+        } else if (grid[{x,new_y}] == '.') {
+            covered_cells++;
+        }else if(grid[{x,new_y}] == '#' || isdigit(grid[{x,new_y}])){
+            tower_count = false;
+        }
+        x++; 
+    }
+    tower_count = true;
+    y = new_y - 1;
+    while (y >= 0) {
+        if (grid[{new_x,y}] == 'x') {
+            if (tower_count == true) {
+                return 0;
+            }
+            tower_count = true;
+        } else if (grid[{new_x,y}] == '.') {
+            covered_cells++;
+        }else if(grid[{new_x,y}] == '#' || isdigit(grid[{new_x,y}])){
+            tower_count = false;
+        }
+        y--;  
+    }
+
+    return covered_cells;
+}
+
+set<pair<int,pair<int,int>>> check_places(int r, int c){
+    set<pair<int,pair<int,int>>> available_places;
+    for(int place = 0; place < 4 ; place++){
+        int new_x = r + turret_places[place][0];
+        int new_y = c + turret_places[place][1];
+        int n_cells;
+        if(check_grid(new_x,new_y) && grid[{new_x,new_y}] == '.'){
+            n_cells = count_covered_cells(new_x,new_y);
+            if (n_cells != 0) {
+                available_places.insert({n_cells,{new_x,new_y}});
+            }
         }
     }
-    return put_turrets(r,c,number_turrets,place,flag);
+    return available_places;
+}
+
+int put_turrets(int r, int c, int number_turrets){
+    if(number_turrets == 0){
+        return 1;
+    }
+    set<pair<int,pair<int,int>>> places = check_places(r,c);
+    if(int(places.size()) >= number_turrets){
+        auto pl = places.begin();
+        for(int i = 0; i < number_turrets; i++){
+            turrets[{r,c}][pl->second] = 1;
+            grid[pl->second] = 'x';
+            pl++;
+        }
+    }else{
+        return 0;
+    }
+    
+    print_grid();
+    return 1;
 }
 
 int count_turrets_around_outpost(int r,int c){
@@ -139,42 +225,28 @@ bool check_turret_same_column_or_line(){
     return false;
 }
 
+void fill_turrets(){
+
+}
+
 void work_outposts(){
     for(auto outpost : outposts){
         int r = outpost.first.first;
         int c = outpost.first.second;
         int number_turrets = outpost.second;
-        bool flag = number_turrets == 0 ? false : true;
-        int remaining_turrets_to_place = number_turrets - count_turrets_around_outpost(r,c);
-        if(!put_turrets(r,c,remaining_turrets_to_place,0,flag)){
-            cout << "noxus will rise!" << endl;
+        int remaining_turrets_to_place;
+        number_turrets == 0 ? remaining_turrets_to_place = 0 : remaining_turrets_to_place = number_turrets-count_turrets_around_outpost(r,c);
+        if(!put_turrets(r,c,remaining_turrets_to_place)){
+            cout << "noxus will rise!" << '\n';
             return;
         }
     }
+    fill_turrets();
+    cout << int(turrets.size()) << '\n';
 }
 
-void put_turrets(){
 
-}
 
-void print_grid() {
-    for (int i = 0; i < R; i++) {
-        for (int j = 0; j < C; j++) {
-            cout << grid[{i, j}];
-        }
-        cout << endl;
-    }
-}
-
-void combine_turrets() {
-   // for outposts -> retorna as combinacoes todas do proprio outpost. pegamos na primeira e continuamos a combinar
-    for(auto &outpost : turrets){
-        if(outpost.second.size() > 1){
-            // ou seja temos mais de uma torre pra combinar
-            
-        }
-    }
-}
 
 
 void print_turrets(){
@@ -203,24 +275,11 @@ void heimerdinger(){
             }
         }
         work_outposts();
-        print_grid();
-        if(check_turret_same_column_or_line()){
-            cout << "tira que eu bati" << endl;
-            combine_turrets();
-            print_grid();
-        }else{
-            put_turrets();
-        }
-        cout << endl;
-        print_turrets();
-        cout << endl;
     }
 }
 
 
 int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
     heimerdinger();
     return 0;
 }
