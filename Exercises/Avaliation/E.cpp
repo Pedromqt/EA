@@ -16,7 +16,7 @@ int oven(vector<int>& times, int total_times) {
             dp[i][j] = dp[i - 1][j] || dp[i - 1][j - times[i - 1]];
         }
     }
-    e
+    
     for (int j = total_times / 2; j >= 0; j--) {
         if (dp[times_size][j]) {
             return total_times - 2 * j;
