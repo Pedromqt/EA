@@ -8,8 +8,8 @@
 using namespace std;
 
 const int MAX_CANDIDATOS = 256;
-const int dLinha[4] = {-1, 0, 1, 0};
-const int dColuna[4] = {0, 1, 0, -1};
+int candidatos_posto[][2] = {{-1, 0}, {0, 1}, {1, 0},{0, -1}};
+
 
 struct Candidato {
     int r, c;
@@ -102,23 +102,49 @@ void inicializaCandidatos() {
     }
 }
 
+bool verificarPos(int r,int c){
+    if(r >= 0 && r < R && c >= 0 && c < C && tabuleiro[r][c] != '#' && !isdigit(tabuleiro[r][c])){
+        return true;
+    }else{
+        return false;
+    }
+}
+
 void calculaCoberturaCandidatos() {
     for (int i = 0; i < N; i++) {
         candidatos[i].cobertura.set(i, true);
         int r = candidatos[i].r, c = candidatos[i].c;
         for (int d = 0; d < 4; d++) {
-            int nr = r + dLinha[d], nc = c + dColuna[d];
-            while (nr >= 0 && nr < R && nc >= 0 && nc < C && tabuleiro[nr][nc] != '#' && !isdigit(tabuleiro[nr][nc])) {
+            int nr = r + candidatos_posto[d][0];
+            int nc = c + candidatos_posto[d][0];
+            while (verificarPos(nr,nc)) {
                 if (tabuleiro[nr][nc] == '.') {
                     int j = indiceCandidato[nr][nc];
                     if (j != -1)
                         candidatos[i].cobertura.set(j, true);
                 }
-                nr += dLinha[d];
-                nc += dColuna[d];
+                nr += candidatos_posto[d][0];
+                nc += candidatos_posto[d][1];
             }
         }
     }
+}
+
+bool encontraParedePostoEntreCandidatos(int pos1, int pos2, int linha, int coluna){
+    if(linha != NULL){
+        for (int pp = pos1 + 1; pp < pos2; pp++) {
+            if (tabuleiro[linha][pp] == '#' || isdigit(tabuleiro[linha][pp])) { 
+                return true; 
+            }
+        }
+    }else if(coluna != NULL){
+        for (int pp = pos1 + 1; pp < pos2; pp++) {
+            if (tabuleiro[pp][coluna] == '#' || isdigit(tabuleiro[pp][coluna])) { 
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 void calculaConflitosCandidatos() {
@@ -128,13 +154,7 @@ void calculaConflitosCandidatos() {
                 int linha = candidatos[i].r;
                 int col1 = min(candidatos[i].c, candidatos[j].c);
                 int col2 = max(candidatos[i].c, candidatos[j].c);
-                bool bloqueado = false;
-                for (int cc = col1 + 1; cc < col2; cc++) {
-                    if (tabuleiro[linha][cc] == '#' || isdigit(tabuleiro[linha][cc])) { 
-                        bloqueado = true; 
-                        break; 
-                    }
-                }
+                bool bloqueado = encontraParedePostoEntreCandidatos(col1, col2, linha, NULL);
                 if (!bloqueado) {
                     candidatos[i].conflito.set(j, true);
                     candidatos[j].conflito.set(i, true);
@@ -144,13 +164,7 @@ void calculaConflitosCandidatos() {
                 int coluna = candidatos[i].c;
                 int row1 = min(candidatos[i].r, candidatos[j].r);
                 int row2 = max(candidatos[i].r, candidatos[j].r);
-                bool bloqueado = false;
-                for (int rr = row1 + 1; rr < row2; rr++) {
-                    if (tabuleiro[rr][coluna] == '#' || isdigit(tabuleiro[rr][coluna])) { 
-                        bloqueado = true; 
-                        break; 
-                    }
-                }
+                bool bloqueado = encontraParedePostoEntreCandidatos(row1, row2, NULL, coluna);
                 if (!bloqueado) {
                     candidatos[i].conflito.set(j, true);
                     candidatos[j].conflito.set(i, true);
@@ -160,7 +174,15 @@ void calculaConflitosCandidatos() {
     }
 }
 
-void constroiPostos() {
+bool verificaPonto(int r, int c){
+    if(r >= 0 && r < R && c >= 0 && c < C && tabuleiro[r][c] == '.'){
+        return true;
+    }else{
+        return false;
+    }
+}
+
+bool constroiPostos() {
     for (int r = 0; r < R; r++) {
         for (int c = 0; c < C; c++) {
             if (isdigit(tabuleiro[r][c])) {
@@ -169,20 +191,24 @@ void constroiPostos() {
                 p.c = c;
                 p.requerido = tabuleiro[r][c] - '0';
                 p.indicesCandidatos.clear();
-                for (int d = 0; d < 4; d++) {
-                    int nr = r + dLinha[d], nc = c + dColuna[d];
-                    if (nr >= 0 && nr < R && nc >= 0 && nc < C && tabuleiro[nr][nc] == '.') {
+                for (int i = 0; i < 4; i++) {
+                    int nr = r + candidatos_posto[i][0];
+                    int nc = c + candidatos_posto[i][1];
+                    if (verificaPonto(nr,nc)) {
                         int idx = indiceCandidato[nr][nc];
-                        if (idx != -1)
+                        if (idx != -1){
                             p.indicesCandidatos.push_back(idx);
+                        }
                     }
                 }
-                if (p.requerido > static_cast<int>(p.indicesCandidatos.size()))
-                    throw string("invalid");
+                if (p.requerido > int(p.indicesCandidatos.size())){
+                    return false;
+                }
                 postos.push_back(p);
             }
         }
     }
+    return true;
 }
 
 void clearStructs(){
@@ -202,13 +228,10 @@ void processaCasoTeste() {
     inicializaCandidatos();
     calculaCoberturaCandidatos();
     calculaConflitosCandidatos();
-    try {
-        constroiPostos();
-    } catch (string err) {
+    if(!constroiPostos()){
         cout << "noxus will rise!" << "\n";
-        return;
     }
-    melhor = INT_MAX;
+    melhor = 0;
     for (int i = 0; i < N; i++) {
         coberturaCompleta.set(i, true);
     }
@@ -221,7 +244,7 @@ void processaCasoTeste() {
     }
     vector<int> contagemPostos(postos.size(), 0);
     buscaRecursiva(coberta, disponivel, contagemPostos, 0);
-    if (melhor == INT_MAX){
+    if (melhor == 0){
         cout << "noxus will rise!" << "\n";
     }else{
         cout << melhor << "\n";
