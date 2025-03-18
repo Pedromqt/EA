@@ -32,11 +32,14 @@ bitset<MAX_CANDIDATOS> coberturaCompleta;
 int melhor = INT_MAX;
 
 void buscaRecursiva(bitset<MAX_CANDIDATOS> coberta, bitset<MAX_CANDIDATOS> disponivel, vector<int>& contagemPostos, int escolhidos) {
-    if (escolhidos >= melhor) return;
+    if (escolhidos >= melhor) {
+        return;
+    }
     if (coberta == coberturaCompleta) {
-        for (size_t i = 0; i < postos.size(); i++) {
-            if (contagemPostos[i] != postos[i].requerido)
+        for (int i = 0; i < int(postos.size()); i++) {
+            if (contagemPostos[i] != postos[i].requerido){
                 return;
+            }
         }
         melhor = escolhidos;
         return;
@@ -51,14 +54,23 @@ void buscaRecursiva(bitset<MAX_CANDIDATOS> coberta, bitset<MAX_CANDIDATOS> dispo
             maxCobertura = max(maxCobertura, numAdicional);
         }
     }
-    if (maxCobertura == 0) return;
+    if (maxCobertura == 0){
+        return;
+    } 
     int limiteInferior = (numNaoCoberta + maxCobertura - 1) / maxCobertura;
-    if (escolhidos + limiteInferior >= melhor) return;
+    if (escolhidos + limiteInferior >= melhor){
+        return;
+    } 
     int u = -1;
     for (int i = 0; i < N; i++) {
-        if (naoCoberta.test(i)) { u = i; break; }
+        if (naoCoberta.test(i)) { 
+            u = i; 
+            break; 
+        }
     }
-    if (u == -1) return;
+    if (u == -1){
+        return;
+    }
     for (int i = 0; i < N; i++) {
         if (disponivel.test(i) && candidatos[i].cobertura.test(u)) {
             bitset<MAX_CANDIDATOS> novaCoberta = coberta | candidatos[i].cobertura;
@@ -66,19 +78,31 @@ void buscaRecursiva(bitset<MAX_CANDIDATOS> coberta, bitset<MAX_CANDIDATOS> dispo
             novoDisponivel.reset(i);
             vector<int> novaContagem = contagemPostos;
             bool valido = true;
-            for (size_t j = 0; j < postos.size(); j++) {
+            for (int j = 0; j < int(postos.size()); j++) {
                 for (int cand : postos[j].indicesCandidatos) {
-                    if (cand == i) { novaContagem[j]++; break; }
+                    if (cand == i) { 
+                        novaContagem[j]++; 
+                        break; 
+                    }
                 }
-                if (novaContagem[j] > postos[j].requerido) { valido = false; break; }
+                if (novaContagem[j] > postos[j].requerido) { 
+                    valido = false; 
+                    break; 
+                }
                 int restante = 0;
                 for (int cand : postos[j].indicesCandidatos) {
-                    if (novoDisponivel.test(cand)) restante++;
+                    if (novoDisponivel.test(cand)){
+                        restante++;
+                    } 
                 }
-                if (novaContagem[j] + restante < postos[j].requerido) { valido = false; break; }
+                if (novaContagem[j] + restante < postos[j].requerido) { 
+                    valido = false; 
+                    break; 
+                }
             }
-            if (!valido) continue;
-            buscaRecursiva(novaCoberta, novoDisponivel, novaContagem, escolhidos + 1);
+            if (valido){
+                buscaRecursiva(novaCoberta, novoDisponivel, novaContagem, escolhidos + 1);
+            }            
         }
     }
 }
@@ -116,7 +140,7 @@ void calculaCoberturaCandidatos() {
         int r = candidatos[i].r, c = candidatos[i].c;
         for (int d = 0; d < 4; d++) {
             int nr = r + candidatos_posto[d][0];
-            int nc = c + candidatos_posto[d][0];
+            int nc = c + candidatos_posto[d][1];
             while (verificarPos(nr,nc)) {
                 if (tabuleiro[nr][nc] == '.') {
                     int j = indiceCandidato[nr][nc];
@@ -131,18 +155,19 @@ void calculaCoberturaCandidatos() {
     }
 }
 
-bool encontraParedePostoEntreCandidatos(int pos1, int pos2, int linha, int coluna){
-    if(linha != NULL){
-        for (int pp = pos1 + 1; pp < pos2; pp++) {
-            if (tabuleiro[linha][pp] == '#' || isdigit(tabuleiro[linha][pp])) { 
-                return true; 
-            }
+bool encontraParedeOutpostCandidatosLinha(int col1, int col2, int linha){
+    for (int cc = col1 + 1; cc < col2; cc++){
+        if (tabuleiro[linha][cc] == '#' || isdigit(tabuleiro[linha][cc])){ 
+            return true;    
         }
-    }else if(coluna != NULL){
-        for (int pp = pos1 + 1; pp < pos2; pp++) {
-            if (tabuleiro[pp][coluna] == '#' || isdigit(tabuleiro[pp][coluna])) { 
-                return true;
-            }
+    }
+    return false;
+}
+
+bool encontraParedeOutpostCandidatosColuna(int row1, int row2, int coluna){
+    for (int rr = row1 + 1; rr < row2; rr++) {
+        if (tabuleiro[rr][coluna] == '#' || isdigit(tabuleiro[rr][coluna])){ 
+            return true;
         }
     }
     return false;
@@ -155,7 +180,7 @@ void calculaConflitosCandidatos() {
                 int linha = candidatos[i].r;
                 int col1 = min(candidatos[i].c, candidatos[j].c);
                 int col2 = max(candidatos[i].c, candidatos[j].c);
-                bool bloqueado = encontraParedePostoEntreCandidatos(col1, col2, linha, NULL);
+                bool bloqueado = encontraParedeOutpostCandidatosLinha(col1, col2, linha);
                 if (!bloqueado) {
                     candidatos[i].conflito.set(j, true);
                     candidatos[j].conflito.set(i, true);
@@ -165,7 +190,7 @@ void calculaConflitosCandidatos() {
                 int coluna = candidatos[i].c;
                 int row1 = min(candidatos[i].r, candidatos[j].r);
                 int row2 = max(candidatos[i].r, candidatos[j].r);
-                bool bloqueado = encontraParedePostoEntreCandidatos(row1, row2, NULL, coluna);
+                bool bloqueado = encontraParedeOutpostCandidatosColuna(row1, row2, coluna);
                 if (!bloqueado) {
                     candidatos[i].conflito.set(j, true);
                     candidatos[j].conflito.set(i, true);
@@ -231,8 +256,9 @@ void processaCasoTeste() {
     calculaConflitosCandidatos();
     if(!constroiPostos()){
         cout << "noxus will rise!" << "\n";
+        return;
     }
-    melhor = 0;
+    melhor = INT_MAX;
     for (int i = 0; i < N; i++) {
         coberturaCompleta.set(i, true);
     }
@@ -245,13 +271,12 @@ void processaCasoTeste() {
     }
     vector<int> contagemPostos(postos.size(), 0);
     buscaRecursiva(coberta, disponivel, contagemPostos, 0);
-    if (melhor == 0){
+    if (melhor == INT_MAX){
         cout << "noxus will rise!" << "\n";
     }else{
         cout << melhor << "\n";
     }
 }
-
 
 void heimerdinger(){
     int T;
@@ -266,6 +291,5 @@ int main(){
     cin.tie(nullptr);
     
     heimerdinger();
-
     return 0;
 }

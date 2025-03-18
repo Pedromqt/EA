@@ -7,219 +7,244 @@
 #include <algorithm>
 using namespace std;
 
-const int MAX_CANDIDATES = 256;
+const int MAX_CANDIDATOS = 256;
+const int dLinha[4] = {-1, 0, 1, 0};
+const int dColuna[4] = {0, 1, 0, -1};
 
-struct Candidate {
+struct Candidato {
     int r, c;
-    bitset<MAX_CANDIDATES> coverage;
-    bitset<MAX_CANDIDATES> conflict;
+    bitset<MAX_CANDIDATOS> cobertura;
+    bitset<MAX_CANDIDATOS> conflito;
 };
 
-struct Outpost {
-    int r, c, required;
-    vector<int> candIndices;
+struct Posto {
+    int r, c, requerido;
+    vector<int> indicesCandidatos;
 };
 
-int R, C, N;
-vector<string> grid;
-vector<Candidate> candidates;
-vector<vector<int>> candidateIndex;
-vector<Outpost> outposts;
-bitset<MAX_CANDIDATES> fullCoverage;
+int R, C;
+vector<string> tabuleiro;
+vector<Candidato> candidatos;
+int N;
+vector<vector<int>> indiceCandidato;
+vector<Posto> postos;
 
-int best = 0;
+bitset<MAX_CANDIDATOS> coberturaCompleta;
+int melhor = INT_MAX;
 
-void dfs(bitset<MAX_CANDIDATES> covered, bitset<MAX_CANDIDATES> available, vector<int>& outpostCount, int chosenCount) {
-    if (chosenCount >= best) return;
-    if (covered == fullCoverage) {
-        for (size_t i = 0; i < outposts.size(); i++) {
-            if (outpostCount[i] != outposts[i].required)
+void buscaRecursiva(bitset<MAX_CANDIDATOS> coberta, bitset<MAX_CANDIDATOS> disponivel, vector<int>& contagemPostos, int escolhidos) {
+    if (escolhidos >= melhor) return;
+    if (coberta == coberturaCompleta) {
+        for (size_t i = 0; i < postos.size(); i++) {
+            if (contagemPostos[i] != postos[i].requerido)
                 return;
         }
-        best = chosenCount;
+        melhor = escolhidos;
         return;
     }
-    bitset<MAX_CANDIDATES> uncovered = fullCoverage & ~covered;
-    int uncoveredCount = uncovered.count();
-    int maxCover = 0;
+    bitset<MAX_CANDIDATOS> naoCoberta = coberturaCompleta & ~coberta;
+    int numNaoCoberta = naoCoberta.count();
+    int maxCobertura = 0;
     for (int i = 0; i < N; i++) {
-        if (available.test(i)) {
-            bitset<MAX_CANDIDATES> add = candidates[i].coverage & ~covered;
-            int addCount = add.count();
-            maxCover = max(maxCover, addCount);
+        if (disponivel.test(i)) {
+            bitset<MAX_CANDIDATOS> adicional = candidatos[i].cobertura & ~coberta;
+            int numAdicional = adicional.count();
+            maxCobertura = max(maxCobertura, numAdicional);
         }
     }
-    if (maxCover == 0) return;
-    int lowerBound = (uncoveredCount + maxCover - 1) / maxCover;
-    if (chosenCount + lowerBound >= best) return;
+    if (maxCobertura == 0) return;
+    int limiteInferior = (numNaoCoberta + maxCobertura - 1) / maxCobertura;
+    if (escolhidos + limiteInferior >= melhor) return;
     int u = -1;
     for (int i = 0; i < N; i++) {
-        if (uncovered.test(i)) { u = i; break; }
+        if (naoCoberta.test(i)) { u = i; break; }
     }
     if (u == -1) return;
     for (int i = 0; i < N; i++) {
-        if (available.test(i) && candidates[i].coverage.test(u)) {
-            bitset<MAX_CANDIDATES> newCovered = covered | candidates[i].coverage;
-            bitset<MAX_CANDIDATES> newAvailable = available & ~(candidates[i].conflict);
-            newAvailable.reset(i);
-            vector<int> newOutpostCount = outpostCount;
-            bool valid = true;
-            for (size_t j = 0; j < outposts.size(); j++) {
-                for (int cand : outposts[j].candIndices) {
-                    if (cand == i) { newOutpostCount[j]++; break; }
+        if (disponivel.test(i) && candidatos[i].cobertura.test(u)) {
+            bitset<MAX_CANDIDATOS> novaCoberta = coberta | candidatos[i].cobertura;
+            bitset<MAX_CANDIDATOS> novoDisponivel = disponivel & ~(candidatos[i].conflito);
+            novoDisponivel.reset(i);
+            vector<int> novaContagem = contagemPostos;
+            bool valido = true;
+            for (size_t j = 0; j < postos.size(); j++) {
+                for (int cand : postos[j].indicesCandidatos) {
+                    if (cand == i) { novaContagem[j]++; break; }
                 }
-                if (newOutpostCount[j] > outposts[j].required) { valid = false; break; }
-                int remain = 0;
-                for (int cand : outposts[j].candIndices) {
-                    if (newAvailable.test(cand)) remain++;
+                if (novaContagem[j] > postos[j].requerido) { valido = false; break; }
+                int restante = 0;
+                for (int cand : postos[j].indicesCandidatos) {
+                    if (novoDisponivel.test(cand)) restante++;
                 }
-                if (newOutpostCount[j] + remain < outposts[j].required) { valid = false; break; }
+                if (novaContagem[j] + restante < postos[j].requerido) { valido = false; break; }
             }
-            if (!valid) continue;
-            dfs(newCovered, newAvailable, newOutpostCount, chosenCount + 1);
+            if (!valido) continue;
+            buscaRecursiva(novaCoberta, novoDisponivel, novaContagem, escolhidos + 1);
         }
     }
 }
 
-void candidates_pos(){
-    candidateIndex = vector<vector<int>>(R, vector<int>(C, -1));
+void inicializaCandidatos() {
+    indiceCandidato.assign(R, vector<int>(C, -1));
+    candidatos.clear();
     N = 0;
     for (int r = 0; r < R; r++) {
         for (int c = 0; c < C; c++) {
-            if (grid[r][c] == '.') {
-                candidateIndex[r][c] = N;
-                Candidate cand;
-                cand.r = r; 
+            if (tabuleiro[r][c] == '.') {
+                indiceCandidato[r][c] = N;
+                Candidato cand;
+                cand.r = r;
                 cand.c = c;
-                cand.coverage.reset(); 
-                cand.conflict.reset();
-                candidates.push_back(cand);
+                cand.cobertura.reset();
+                cand.conflito.reset();
+                candidatos.push_back(cand);
                 N++;
             }
         }
     }
 }
 
-void heimerdinger(){
-    candidates_pos();
+void calculaCoberturaCandidatos() {
     for (int i = 0; i < N; i++) {
-        fullCoverage.set(i, true);
-    }
-    int dr[4] = {-1, 0, 1, 0};
-    int dc[4] = {0, 1, 0, -1};
-    for (int i = 0; i < N; i++) {
-        int r = candidates[i].r;
-        int c = candidates[i].c;
-        candidates[i].coverage.set(i, true);
+        candidatos[i].cobertura.set(i, true);
+        int r = candidatos[i].r, c = candidatos[i].c;
         for (int d = 0; d < 4; d++) {
-            int nr = r + dr[d];
-            int nc = c + dc[d];
-            while (nr >= 0 && nr < R && nc >= 0 && nc < C && grid[nr][nc] != '#' && !isdigit(grid[nr][nc])) {
-                if (grid[nr][nc] == '.') {
-                    int j = candidateIndex[nr][nc];
-                    if(j != -1)
-                        candidates[i].coverage.set(j, true);
+            int nr = r + dLinha[d], nc = c + dColuna[d];
+            while (nr >= 0 && nr < R && nc >= 0 && nc < C && tabuleiro[nr][nc] != '#' && !isdigit(tabuleiro[nr][nc])) {
+                if (tabuleiro[nr][nc] == '.') {
+                    int j = indiceCandidato[nr][nc];
+                    if (j != -1)
+                        candidatos[i].cobertura.set(j, true);
                 }
-                nr += dr[d];
-                nc += dc[d];
+                nr += dLinha[d];
+                nc += dColuna[d];
             }
         }
     }
-    for (int i = 0; i < N; i++) {
-        for (int j = i+1; j < N; j++) {
-            if (candidates[i].r == candidates[j].r) {
-                int row = candidates[i].r;
-                int col1 = min(candidates[i].c, candidates[j].c);
-                int col2 = max(candidates[i].c, candidates[j].c);
-                bool blocked = false;
-                for (int cc = col1+1; cc < col2; cc++) {
-                    if (grid[row][cc] == '#' || isdigit(grid[row][cc])) { blocked = true; break; }
-                }
-                if (!blocked) {
-                    candidates[i].conflict.set(j, true);
-                    candidates[j].conflict.set(i, true);
-                }
-            }
-            if (candidates[i].c == candidates[j].c) {
-                int col = candidates[i].c;
-                int row1 = min(candidates[i].r, candidates[j].r);
-                int row2 = max(candidates[i].r, candidates[j].r);
-                bool blocked = false;
-                for (int rr = row1+1; rr < row2; rr++) {
-                    if (grid[rr][col] == '#' || isdigit(grid[rr][col])) { blocked = true; break; }
-                }
-                if (!blocked) {
-                    candidates[i].conflict.set(j, true);
-                    candidates[j].conflict.set(i, true);
-                }
-            }
-        }
-    }
-    for (int r = 0; r < R; r++) {
-        for (int c = 0; c < C; c++) {
-            if (isdigit(grid[r][c])) {
-                Outpost op;
-                op.r = r; op.c = c;
-                op.required = grid[r][c] - '0';
-                op.candIndices.clear();
-                for (int d = 0; d < 4; d++) {
-                    int nr = r + dr[d], nc = c + dc[d];
-                    if (nr >= 0 && nr < R && nc >= 0 && nc < C && grid[nr][nc] == '.') {
-                        int idx = candidateIndex[nr][nc];
-                        if (idx != -1)
-                            op.candIndices.push_back(idx);
-                    }
-                }
-                if (op.required > static_cast<int>(op.candIndices.size())) {
-                    cout << "noxus will rise!" << "\n";
-                    goto next_test;
-                }
-                outposts.push_back(op);
-            }
-        }
-    }
-    
-    
-    best = 0;
-    bitset<MAX_CANDIDATES> initialCovered; initialCovered.reset();
-    bitset<MAX_CANDIDATES> initialAvailable; initialAvailable.reset();
-    for (int i = 0; i < N; i++) {
-        initialAvailable.set(i, true);
-    }
-    vector<int> initialOutpostCount(outposts.size(), 0);
-    dfs(initialCovered, initialAvailable, initialOutpostCount, 0);
-
-    if (best == 0)
-        cout << "noxus will rise!" << "\n";
-    else
-        cout << best << "\n";
-    
-    next_test: ;    
-
 }
 
-void start_structs(){
-    grid.clear();
-    candidates.clear();
-    candidateIndex.clear();
-    outposts.clear();
-    fullCoverage.reset();
+bool encontraParedePostoEntreCandidatos(int pos1, int pos2, int linha, int coluna){
+    if(linha != 0){
+        for (int pp = pos1 + 1; pp < pos2; pp++) {
+            if (tabuleiro[linha][pp] == '#' || isdigit(tabuleiro[linha][pp])) { 
+                return true; 
+            }
+        }
+    }
+    if(coluna != 0){
+        for (int pp = pos1 + 1; pp < pos2; pp++) {
+            if (tabuleiro[pp][coluna] == '#' || isdigit(tabuleiro[pp][coluna])) { 
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void calculaConflitosCandidatos() {
+    for (int i = 0; i < N; i++) {
+        for (int j = i + 1; j < N; j++) {
+            if (candidatos[i].r == candidatos[j].r) {
+                int linha = candidatos[i].r;
+                int col1 = min(candidatos[i].c, candidatos[j].c);
+                int col2 = max(candidatos[i].c, candidatos[j].c);
+                bool bloqueado = encontraParedePostoEntreCandidatos(col1, col2, linha,0);
+                if (!bloqueado) {
+                    candidatos[i].conflito.set(j, true);
+                    candidatos[j].conflito.set(i, true);
+                }
+            }
+            if (candidatos[i].c == candidatos[j].c) {
+                int coluna = candidatos[i].c;
+                int row1 = min(candidatos[i].r, candidatos[j].r);
+                int row2 = max(candidatos[i].r, candidatos[j].r);
+                bool bloqueado = encontraParedePostoEntreCandidatos(row1, row2, 0, coluna);
+                if (!bloqueado) {
+                    candidatos[i].conflito.set(j, true);
+                    candidatos[j].conflito.set(i, true);
+                }
+            }
+        }
+    }
+}
+
+bool constroiPostos() {
+    postos.clear();
+    for (int r = 0; r < R; r++) {
+        for (int c = 0; c < C; c++) {
+            if (isdigit(tabuleiro[r][c])) {
+                Posto p;
+                p.r = r;
+                p.c = c;
+                p.requerido = tabuleiro[r][c] - '0';
+                p.indicesCandidatos.clear();
+                for (int d = 0; d < 4; d++) {
+                    int nr = r + dLinha[d], nc = c + dColuna[d];
+                    if (nr >= 0 && nr < R && nc >= 0 && nc < C && tabuleiro[nr][nc] == '.') {
+                        int idx = indiceCandidato[nr][nc];
+                        if (idx != -1){
+                            p.indicesCandidatos.push_back(idx);
+                        }
+                    }
+                }
+                if (p.requerido > int(p.indicesCandidatos.size())){
+                    return false;
+                }
+                postos.push_back(p);
+            }
+        }
+    }
+    return true;
+}
+
+void processaCasoTeste() {
+    cin >> R >> C;
+    tabuleiro.clear();
+    tabuleiro.resize(R);
+    for (int i = 0; i < R; i++) {
+        cin >> tabuleiro[i];
+    }
+    inicializaCandidatos();
+    calculaCoberturaCandidatos();
+    calculaConflitosCandidatos();
+    if(!constroiPostos()){
+        cout << "noxus will rise!" << "\n";
+        return;
+    }
+    melhor = INT_MAX;
+    coberturaCompleta.reset();
+    for (int i = 0; i < N; i++) {
+        coberturaCompleta.set(i, true);
+    }
+    bitset<MAX_CANDIDATOS> coberta;
+    coberta.reset();
+    bitset<MAX_CANDIDATOS> disponivel;
+    disponivel.reset();
+    for (int i = 0; i < N; i++) {
+        disponivel.set(i, true);
+    }
+    vector<int> contagemPostos(postos.size(), 0);
+    buscaRecursiva(coberta, disponivel, contagemPostos, 0);
+    if (melhor == INT_MAX)
+        cout << "noxus will rise!" << "\n";
+    else
+        cout << melhor << "\n";
+}
+
+
+void heimerdinger(){
+    int T;
+    cin >> T;
+    for (int t = 0; t < T; t++) {
+        processaCasoTeste();
+    }
 }
 
 int main(){
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
     
-    int T;
-    cin >> T;
-    for (int t = 0; t < T; t++) {
-        cin >> R >> C;
-        start_structs();
-        grid = vector<string>(R);
-        for (int i = 0; i < R; i++) {
-            cin >> grid[i];
-        }
-        heimerdinger();
-    }
+    heimerdinger();
+
     return 0;
 }
