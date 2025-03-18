@@ -120,8 +120,9 @@ void calculaCoberturaCandidatos() {
             while (verificarPos(nr,nc)) {
                 if (tabuleiro[nr][nc] == '.') {
                     int j = indiceCandidato[nr][nc];
-                    if (j != -1)
+                    if (j != -1){
                         candidatos[i].cobertura.set(j, true);
+                    }
                 }
                 nr += candidatos_posto[d][0];
                 nc += candidatos_posto[d][1];
