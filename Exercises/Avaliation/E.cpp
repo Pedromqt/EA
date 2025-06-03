@@ -22,6 +22,7 @@ int oven(vector<int>& times, int total_times) {
             return total_times - 2 * j;
         }
     }
+    
     return total_times;
 }
 
